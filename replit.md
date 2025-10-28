@@ -13,11 +13,15 @@ This is an automated tool that extracts voter information from the Egyptian High
 ```
 
 ## Recent Changes
-- 2025-10-28: Initial project setup
+- 2025-10-28: Initial project setup and completion
 - Created main bot functionality with Google Sheets integration
-- Implemented Selenium automation for elections website
-- Added progress tracking and resume capability
-- Support for up to 80,000 rows
+- Implemented Selenium automation for elections website with iframe handling
+- Fixed critical zip() bug that was dropping rows when column C shorter than B
+- Added robust error handling (captcha detection, invalid IDs, rate limiting)
+- Implemented progress tracking with progress.json for resume capability
+- Created comprehensive documentation (README.md, SETUP_INSTRUCTIONS.md)
+- Support for up to 80,000 rows with proper data ingestion
+- ChromeDriver setup completed for Replit environment
 
 ## User Preferences
 - Language: Arabic (العربية)
@@ -43,9 +47,11 @@ This is an automated tool that extracts voter information from the Egyptian High
 
 3. **Web Automation**
    - Uses Selenium WebDriver with Chrome (headless mode)
+   - **iframe handling**: Switches to gadget.elections.eg iframe to access inquiry form
    - Automatically queries elections website for each national ID
    - Extracts voter data using BeautifulSoup4
-   - Includes error handling and retry logic
+   - Robust error handling: detects captcha, invalid IDs, rate limiting, and network errors
+   - Multiple fallback strategies for locating page elements
 
 4. **Progress Tracking**
    - Saves progress to `progress.json` after each row
@@ -97,20 +103,26 @@ This is an automated tool that extracts voter information from the Egyptian High
 
 ### Implemented
 ✅ Google Sheets API integration with OAuth2  
-✅ Selenium-based web automation  
-✅ Automatic ChromeDriver management  
-✅ Progress tracking and resume capability  
-✅ Error handling for failed queries  
-✅ Support for 80,000+ rows  
+✅ Selenium-based web automation with iframe handling  
+✅ Automatic ChromeDriver management (Replit-compatible)  
+✅ Progress tracking and resume capability (progress.json)  
+✅ Comprehensive error handling:
+  - Captcha detection
+  - Invalid national ID detection
+  - Rate limiting handling
+  - Network error recovery
+✅ Support for 80,000+ rows with proper data ingestion  
 ✅ Real-time progress display  
 ✅ Automatic retry on interruption  
+✅ Complete documentation and setup instructions  
+✅ Fixed critical bugs (zip truncation, iframe access)
 
 ### Pending Implementation
-- Advanced error handling for invalid national IDs
-- Retry logic for failed network connections
+⚠️ **Important**: The BeautifulSoup selectors for extracting data may need updates based on actual website structure. Test with real credentials first.
 - Email notifications on completion
 - Web UI for monitoring
 - Export to multiple formats (CSV, Excel)
+- Concurrent processing with rate limiting
 
 ## Usage
 
