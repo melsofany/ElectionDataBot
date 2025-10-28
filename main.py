@@ -284,19 +284,25 @@ class VoterInquiryBot:
             
             # الطريقة 1: استخراج البيانات من جدول HTML
             try:
+                # انتظار ظهور الجدول مع النتائج
+                wait = WebDriverWait(self.driver, 10)
+                try:
+                    wait.until(EC.presence_of_element_located((By.XPATH, "//table//td[contains(text(), 'مركز')]")))
+                except:
+                    pass  # في حالة عدم وجود النتائج
+                
                 # البحث عن جميع صفوف الجدول
                 table_rows = self.driver.find_elements(By.TAG_NAME, "tr")
                 
                 for row in table_rows:
                     try:
-                        # الحصول على جميع الخلايا في الصف
-                        cells = row.find_elements(By.TAG_NAME, "td")
+                        # الحصول على جميع الخلايا في الصف (td و th)
+                        cells = row.find_elements(By.CSS_SELECTOR, "th, td")
                         
                         if len(cells) >= 2:
-                            # في الجداول العربية، العنوان يكون على اليمين والقيمة على اليسار
-                            # خلية 0 = القيمة، خلية 1 = التسمية
-                            label_cell = cells[1].text.strip()
-                            value_cell = cells[0].text.strip()
+                            # الخلية الأولى = التسمية، الخلية الأخيرة = القيمة
+                            label_cell = cells[0].text.strip()
+                            value_cell = cells[-1].text.strip()
                             
                             # استخراج المركز الانتخابي
                             if 'مركز' in label_cell and 'انتخاب' in label_cell:
@@ -412,9 +418,9 @@ class VoterInquiryBot:
                         cells = row.find_all('td')
                         
                         if len(cells) >= 2:
-                            # العنوان على اليمين، القيمة على اليسار
-                            label_text = cells[1].get_text(strip=True)
-                            value_text = cells[0].get_text(strip=True)
+                            # الخلية الأولى = التسمية، الخلية الأخيرة = القيمة
+                            label_text = cells[0].get_text(strip=True)
+                            value_text = cells[-1].get_text(strip=True)
                             
                             # استخراج المركز الانتخابي
                             if 'مركز' in label_text and ('انتخاب' in label_text or 'إنتخاب' in label_text):
