@@ -13,15 +13,18 @@ This is an automated tool that extracts voter information from the Egyptian High
 ```
 
 ## Recent Changes
-- 2025-10-28: Initial project setup and completion
-- Created main bot functionality with Google Sheets integration
+- 2025-10-28: Replit environment setup completed
+  - Installed Chromium 138.0.7204.100 and ChromeDriver 138.0.7204.100 via Nix
+  - Configured workflow for running the bot (console output)
+  - All Python dependencies installed and verified
+  - Environment ready for use - only needs credentials.json upload
+- Initial project setup with Google Sheets integration
 - Implemented Selenium automation for elections website with iframe handling
 - Fixed critical zip() bug that was dropping rows when column C shorter than B
 - Added robust error handling (captcha detection, invalid IDs, rate limiting)
 - Implemented progress tracking with progress.json for resume capability
 - Created comprehensive documentation (README.md, SETUP_INSTRUCTIONS.md)
 - Support for up to 80,000 rows with proper data ingestion
-- ChromeDriver setup completed for Replit environment
 
 ## User Preferences
 - Language: Arabic (العربية)
