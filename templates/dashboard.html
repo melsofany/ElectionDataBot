@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم بوت الاستعلام</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            direction: rtl;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .status-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        
+        .status-card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+        }
+        
+        .stat-item .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        
+        .stat-item .value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        
+        .logs-container {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+        
+        .refresh-indicator {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            display: none;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .alert {
+            background: #ff9800;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="refresh-indicator" id="refreshIndicator">🔄 جاري التحديث...</div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🗳️ لوحة تحكم بوت الاستعلام عن بيانات الناخبين</h1>
+            <p>مراقبة التقدم والنتائج في الوقت الفعلي</p>
+        </div>
+        
+        <div id="credentialsAlert" class="alert" style="display:none;">
+            ⚠️ يرجى رفع ملف credentials.json لبدء العمل
+        </div>
+        
+        <div class="status-card">
+            <h2>📊 الإحصائيات</h2>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="label">آخر صف معالج</div>
+                    <div class="value" id="lastRow">-</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">إجمالي المعالج</div>
+                    <div class="value" id="totalProcessed">-</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">آخر تحديث</div>
+                    <div class="value" id="lastUpdate" style="font-size: 1em;">-</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">الحالة</div>
+                    <div class="value" id="status" style="font-size: 1.2em;">⏳</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-card">
+            <h2>📝 سجل العمليات</h2>
+            <div class="logs-container" id="logs">
+                <div class="loading">جاري تحميل السجلات...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function formatTime(isoString) {
+            if (!isoString) return '-';
+            const date = new Date(isoString);
+            return date.toLocaleString('ar-EG', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+        
+        async function updateStatus() {
+            const indicator = document.getElementById('refreshIndicator');
+            indicator.style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                document.getElementById('lastRow').textContent = data.progress.last_row || 0;
+                document.getElementById('totalProcessed').textContent = data.progress.total_processed || 0;
+                document.getElementById('lastUpdate').textContent = formatTime(data.progress.last_updated);
+                
+                const logsContainer = document.getElementById('logs');
+                logsContainer.textContent = data.logs;
+                logsContainer.scrollTop = logsContainer.scrollHeight;
+                
+                if (data.logs.includes('credentials.json')) {
+                    document.getElementById('credentialsAlert').style.display = 'block';
+                    document.getElementById('status').textContent = '⚠️ في انتظار الإعداد';
+                } else if (data.logs.includes('✓ اكتملت المعالجة بنجاح')) {
+                    document.getElementById('status').textContent = '✅ مكتمل';
+                } else if (data.progress.total_processed > 0) {
+                    document.getElementById('status').textContent = '🔄 يعمل';
+                } else {
+                    document.getElementById('status').textContent = '⏸️ متوقف';
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+            } finally {
+                setTimeout(() => {
+                    indicator.style.display = 'none';
+                }, 500);
+            }
+        }
+        
+        updateStatus();
+        setInterval(updateStatus, 3000);
+    </script>
+</body>
+</html>

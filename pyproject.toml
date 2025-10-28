@@ -5,6 +5,7 @@ description = "Add your description here"
 requires-python = ">=3.11"
 dependencies = [
     "beautifulsoup4>=4.14.2",
+    "flask>=3.1.2",
     "google-auth>=2.41.1",
     "gspread>=6.2.1",
     "oauth2client>=4.1.3",
