@@ -60,8 +60,6 @@ last_processed.json
 Thumbs.db
 
 # Replit
-.replit
-replit.nix
 .pythonlibs/
 
 # Logs
