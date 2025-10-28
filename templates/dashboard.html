@@ -158,6 +158,11 @@
             background: linear-gradient(135deg, #f44336 0%, #da190b 100%);
             color: white;
         }
+        
+        .reset-btn {
+            background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -173,6 +178,9 @@
                 </button>
                 <button id="stopBtn" class="control-btn stop-btn" onclick="stopBot()" disabled>
                     ⏸️ إيقاف العملية
+                </button>
+                <button id="resetBtn" class="control-btn reset-btn" onclick="resetProgress()">
+                    🔄 إعادة تعيين التقدم
                 </button>
             </div>
         </div>
@@ -288,6 +296,33 @@
                 stopBtn.disabled = false;
             } finally {
                 stopBtn.textContent = '⏸️ إيقاف العملية';
+            }
+        }
+        
+        async function resetProgress() {
+            if (!confirm('هل أنت متأكد من إعادة تعيين التقدم؟ سيتم حذف جميع البيانات المحفوظة وستبدأ العملية من الصف الأول.')) {
+                return;
+            }
+            
+            const resetBtn = document.getElementById('resetBtn');
+            resetBtn.disabled = true;
+            resetBtn.textContent = '⏳ جاري إعادة التعيين...';
+            
+            try {
+                const response = await fetch('/api/reset', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('✅ ' + data.message, 'success');
+                    setTimeout(() => updateStatus(), 1000);
+                } else {
+                    showMessage('⚠️ ' + data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('❌ خطأ في الاتصال', 'error');
+            } finally {
+                resetBtn.disabled = false;
+                resetBtn.textContent = '🔄 إعادة تعيين التقدم';
             }
         }
         

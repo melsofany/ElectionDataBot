@@ -119,6 +119,22 @@ def stop_bot():
         'message': 'البوت غير مشغل'
     })
 
+@app.route('/api/reset', methods=['POST'])
+def reset_progress():
+    """إعادة تعيين التقدم"""
+    try:
+        if os.path.exists(PROGRESS_FILE):
+            os.remove(PROGRESS_FILE)
+        return jsonify({
+            'success': True,
+            'message': 'تم إعادة تعيين التقدم بنجاح. يمكنك الآن بدء العملية من جديد.'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'خطأ في إعادة التعيين: {str(e)}'
+        })
+
 if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))
