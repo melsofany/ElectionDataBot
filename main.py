@@ -329,48 +329,90 @@ class VoterInquiryBot:
                 result['error_message'] = 'تم اكتشاف Captcha - يرجى المحاولة لاحقاً'
                 return result
             
-            # الطريقة الجديدة: استخراج البيانات من العناصر المحددة بـ IDs
-            print("  محاولة استخراج البيانات من العناصر المحددة...")
+            # الطريقة الجديدة: استخراج البيانات من النص المباشر
+            print("  محاولة استخراج البيانات من النص...")
             try:
-                # انتظار ظهور نتائج الاستعلام
-                wait = WebDriverWait(self.driver, 10)
+                # الحصول على النص الكامل للصفحة
+                page_full_text = self.driver.find_element(By.TAG_NAME, "body").text
                 
-                # المحاولة 1: استخراج باستخدام IDs المحددة
-                selectors_map = {
-                    'مركز_الانتخاب': ['centerName', 'center-name', 'votingCenter', 'voting-center', 'المركز'],
-                    'العنوان': ['address', 'centerAddress', 'center-address', 'العنوان'],
-                    'رقم_اللجنة_الفرعية': ['committeeNumber', 'committee-number', 'subCommittee', 'اللجنة'],
-                    'الرقم_في_الكشوف': ['orderNumber', 'order-number', 'listNumber', 'الرقم']
-                }
+                # تقسيم النص إلى أسطر للبحث الدقيق
+                lines = page_full_text.split('\n')
                 
-                for field_name, possible_ids in selectors_map.items():
-                    for selector_id in possible_ids:
-                        try:
-                            # محاولة بـ ID
-                            element = self.driver.find_element(By.ID, selector_id)
-                            value = element.text.strip()
-                            if value and len(value) > 0:
-                                result[field_name] = value
-                                print(f"  ✓ وجدت {field_name} من ID '{selector_id}': {value}")
-                                break
-                        except:
-                            try:
-                                # محاولة بـ class name
-                                element = self.driver.find_element(By.CLASS_NAME, selector_id)
-                                value = element.text.strip()
-                                if value and len(value) > 0:
-                                    result[field_name] = value
-                                    print(f"  ✓ وجدت {field_name} من CLASS '{selector_id}': {value}")
-                                    break
-                            except:
-                                continue
+                # البحث عن البيانات باستخدام الأسطر
+                for i, line in enumerate(lines):
+                    line = line.strip()
+                    
+                    # استخراج مركز الانتخاب
+                    if 'مركزك الإنتخابي' in line or 'مركزك الانتخابي' in line:
+                        if i + 1 < len(lines):
+                            next_line = lines[i + 1].strip()
+                            if next_line and not any(keyword in next_line for keyword in ['محافظة', 'قسم', 'العنوان']):
+                                result['مركز_الانتخاب'] = next_line
+                                print(f"  ✓ وجدت المركز الانتخابي: {next_line}")
+                    
+                    # استخراج العنوان
+                    elif 'العنوان' in line and ':' in line:
+                        if i + 1 < len(lines):
+                            next_line = lines[i + 1].strip()
+                            if next_line and not any(keyword in next_line for keyword in ['رقم', 'تاريخ', 'كثافة']):
+                                result['العنوان'] = next_line
+                                print(f"  ✓ وجدت العنوان: {next_line}")
+                    
+                    # استخراج رقم اللجنة الفرعية
+                    elif 'رقم اللجنة الفرعية' in line:
+                        if i + 1 < len(lines):
+                            next_line = lines[i + 1].strip()
+                            if next_line:
+                                result['رقم_اللجنة_الفرعية'] = next_line
+                                print(f"  ✓ وجدت رقم اللجنة: {next_line}")
+                    
+                    # استخراج الرقم في الكشوف
+                    elif 'رقمك في الكشوف' in line:
+                        if i + 1 < len(lines):
+                            next_line = lines[i + 1].strip()
+                            if next_line:
+                                result['الرقم_في_الكشوف'] = next_line
+                                print(f"  ✓ وجدت الرقم في الكشوف: {next_line}")
                 
                 # إذا وجدنا أي بيانات، نعتبر الاستخراج ناجحاً
                 if any([result['مركز_الانتخاب'], result['العنوان'], 
                        result['رقم_اللجنة_الفرعية'], result['الرقم_في_الكشوف']]):
-                    print("  ✓ تم استخراج البيانات بنجاح من العناصر المحددة")
+                    print("  ✓ تم استخراج البيانات بنجاح من النص المباشر")
             except Exception as e:
-                print(f"  تحذير: خطأ في الاستخراج من العناصر المحددة: {str(e)}")
+                print(f"  تحذير: خطأ في الاستخراج من النص: {str(e)}")
+            
+            # طريقة احتياطية: استخراج باستخدام IDs محددة
+            if not result['مركز_الانتخاب']:
+                print("  محاولة استخراج من العناصر المحددة...")
+                try:
+                    selectors_map = {
+                        'مركز_الانتخاب': ['centerName', 'center-name', 'votingCenter', 'voting-center', 'المركز'],
+                        'العنوان': ['address', 'centerAddress', 'center-address', 'العنوان'],
+                        'رقم_اللجنة_الفرعية': ['committeeNumber', 'committee-number', 'subCommittee', 'اللجنة'],
+                        'الرقم_في_الكشوف': ['orderNumber', 'order-number', 'listNumber', 'الرقم']
+                    }
+                    
+                    for field_name, possible_ids in selectors_map.items():
+                        for selector_id in possible_ids:
+                            try:
+                                element = self.driver.find_element(By.ID, selector_id)
+                                value = element.text.strip()
+                                if value and len(value) > 0:
+                                    result[field_name] = value
+                                    print(f"  ✓ وجدت {field_name} من ID '{selector_id}': {value}")
+                                    break
+                            except:
+                                try:
+                                    element = self.driver.find_element(By.CLASS_NAME, selector_id)
+                                    value = element.text.strip()
+                                    if value and len(value) > 0:
+                                        result[field_name] = value
+                                        print(f"  ✓ وجدت {field_name} من CLASS '{selector_id}': {value}")
+                                        break
+                                except:
+                                    continue
+                except Exception as e:
+                    print(f"  تحذير: خطأ في الاستخراج من العناصر المحددة: {str(e)}")
             
             # الطريقة 1: استخراج البيانات من جدول HTML
             try:
