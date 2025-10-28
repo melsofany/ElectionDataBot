@@ -13,10 +13,18 @@ This is an automated tool that extracts voter information from the Egyptian High
 ```
 
 ## Recent Changes
+- 2025-10-28: تحسينات كبيرة في استخراج البيانات
+  - تحسين استخراج المركز الانتخابي باستخدام طريقتين:
+    * الطريقة 1: استخدام Selenium XPath للبحث عن العناصر مباشرة واستخراج القيم من العناصر المجاورة
+    * الطريقة 2: BeautifulSoup كنسخة احتياطية للبحث في جميع العناصر
+  - إضافة رسائل تأكيد عند استخراج البيانات بنجاح
+  - زيادة وقت الانتظار إلى 5 ثوان لضمان تحميل البيانات بالكامل
+  - تحسين منطق البحث عن المركز الانتخابي والعنوان ورقم اللجنة والرقم في الكشوف
+  - إعداد deployment configuration للنشر على Replit
 - 2025-10-28: Replit environment setup completed
   - Installed Chromium 138.0.7204.100 and ChromeDriver 138.0.7204.100 via Nix
-  - Configured workflow for running the bot (console output)
-  - All Python dependencies installed and verified
+  - Configured workflow for Flask dashboard (webview on port 5000)
+  - All Python dependencies installed and verified via uv
   - Environment ready for use - only needs credentials.json upload
 - Initial project setup with Google Sheets integration
 - Implemented Selenium automation for elections website with iframe handling

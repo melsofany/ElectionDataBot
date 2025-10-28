@@ -253,12 +253,8 @@ class VoterInquiryBot:
                 from selenium.webdriver.common.keys import Keys
                 input_field.send_keys(Keys.RETURN)
             
-            # انتظار النتائج
-            time.sleep(4)
-            
-            # استخراج البيانات من الصفحة
-            soup = BeautifulSoup(self.driver.page_source, 'html.parser')
-            page_text = soup.get_text()
+            # انتظار النتائج - انتظار أطول للتأكد من تحميل البيانات
+            time.sleep(5)
             
             result = {
                 'مركز_الانتخاب': '',
@@ -268,6 +264,10 @@ class VoterInquiryBot:
                 'status': 'unknown',
                 'error_message': ''
             }
+            
+            # استخراج البيانات من الصفحة باستخدام BeautifulSoup
+            soup = BeautifulSoup(self.driver.page_source, 'html.parser')
+            page_text = soup.get_text()
             
             # التحقق من وجود رسائل خطأ
             error_keywords = ['غير موجود', 'خطأ', 'غير صحيح', 'لا يوجد', 'invalid', 'error', 'not found']
@@ -282,23 +282,120 @@ class VoterInquiryBot:
                 result['error_message'] = 'تم اكتشاف Captcha - يرجى المحاولة لاحقاً'
                 return result
             
-            # محاولة استخراج البيانات باستخدام عدة طرق
-            # الطريقة 1: البحث النصي
-            for line in page_text.split('\n'):
-                line = line.strip()
-                if 'مركز' in line and 'انتخاب' in line:
-                    result['مركز_الانتخاب'] = line.replace('مركزك الإنتخابي:', '').replace('مركز الانتخاب:', '').strip()
-                elif 'عنوان' in line and result['العنوان'] == '':
-                    result['العنوان'] = line.replace('العنوان:', '').strip()
-                elif 'لجنة' in line and 'فرعية' in line:
-                    result['رقم_اللجنة_الفرعية'] = line.replace('رقم اللجنة الفرعية:', '').strip()
-                elif 'كشوف' in line or 'رقمك' in line:
-                    result['الرقم_في_الكشوف'] = line.replace('رقمك في الكشوف الانتخابية:', '').replace('رقمك في الكشوف:', '').strip()
+            # الطريقة 1: استخدام Selenium للبحث عن العناصر مباشرة
+            try:
+                # البحث عن العناصر باستخدام XPath
+                elements = self.driver.find_elements(By.XPATH, "//*[contains(text(), 'مركز') or contains(text(), 'المركز') or contains(text(), 'لجنة') or contains(text(), 'عنوان') or contains(text(), 'كشوف')]")
+                
+                for element in elements:
+                    element_text = element.text.strip()
+                    parent_text = element.find_element(By.XPATH, "..").text.strip() if element else ""
+                    
+                    # محاولة استخراج المركز الانتخابي
+                    if ('مركز' in element_text.lower() and 'انتخاب' in element_text.lower()) or 'المركز' in element_text:
+                        # محاولة الحصول على القيمة من النص الكامل
+                        full_text = parent_text if parent_text else element_text
+                        for label in ['مركزك الإنتخابي:', 'مركزك الانتخابي:', 'المركز الانتخابي:', 'مركز الانتخاب:']:
+                            if label in full_text:
+                                result['مركز_الانتخاب'] = full_text.replace(label, '').strip()
+                                break
+                        
+                        # إذا لم نجد القيمة، نحاول الحصول على العنصر التالي
+                        if not result['مركز_الانتخاب']:
+                            try:
+                                next_elem = element.find_element(By.XPATH, "following-sibling::*[1]")
+                                if next_elem and next_elem.text.strip():
+                                    result['مركز_الانتخاب'] = next_elem.text.strip()
+                            except:
+                                pass
+                    
+                    # استخراج العنوان
+                    if 'عنوان' in element_text.lower() and not result['العنوان']:
+                        full_text = parent_text if parent_text else element_text
+                        for label in ['العنوان:', 'عنوان اللجنة:', 'عنوان المركز:']:
+                            if label in full_text:
+                                result['العنوان'] = full_text.replace(label, '').strip()
+                                break
+                        
+                        if not result['العنوان']:
+                            try:
+                                next_elem = element.find_element(By.XPATH, "following-sibling::*[1]")
+                                if next_elem and next_elem.text.strip():
+                                    result['العنوان'] = next_elem.text.strip()
+                            except:
+                                pass
+                    
+                    # استخراج رقم اللجنة
+                    if 'لجنة' in element_text.lower() and 'فرعية' in element_text.lower():
+                        full_text = parent_text if parent_text else element_text
+                        for label in ['رقم اللجنة الفرعية:', 'اللجنة الفرعية:', 'لجنة فرعية رقم:']:
+                            if label in full_text:
+                                result['رقم_اللجنة_الفرعية'] = full_text.replace(label, '').strip()
+                                break
+                        
+                        if not result['رقم_اللجنة_الفرعية']:
+                            try:
+                                next_elem = element.find_element(By.XPATH, "following-sibling::*[1]")
+                                if next_elem and next_elem.text.strip():
+                                    result['رقم_اللجنة_الفرعية'] = next_elem.text.strip()
+                            except:
+                                pass
+                    
+                    # استخراج الرقم في الكشوف
+                    if 'كشوف' in element_text.lower() or ('رقمك' in element_text.lower() and 'كشوف' in parent_text.lower()):
+                        full_text = parent_text if parent_text else element_text
+                        for label in ['رقمك في الكشوف الانتخابية:', 'رقمك في الكشوف:', 'الرقم في الكشوف:']:
+                            if label in full_text:
+                                result['الرقم_في_الكشوف'] = full_text.replace(label, '').strip()
+                                break
+                        
+                        if not result['الرقم_في_الكشوف']:
+                            try:
+                                next_elem = element.find_element(By.XPATH, "following-sibling::*[1]")
+                                if next_elem and next_elem.text.strip():
+                                    result['الرقم_في_الكشوف'] = next_elem.text.strip()
+                            except:
+                                pass
+            except Exception as e:
+                print(f"  تحذير: خطأ في الاستخراج باستخدام Selenium: {str(e)}")
+            
+            # الطريقة 2: البحث النصي التقليدي (كنسخة احتياطية)
+            if not any([result['مركز_الانتخاب'], result['العنوان'], result['رقم_اللجنة_الفرعية'], result['الرقم_في_الكشوف']]):
+                # استخدام BeautifulSoup للبحث في جميع العناصر
+                all_elements = soup.find_all(['div', 'span', 'p', 'td', 'th', 'label'])
+                
+                for elem in all_elements:
+                    text = elem.get_text(strip=True)
+                    
+                    if 'مركز' in text and ('انتخاب' in text or 'إنتخاب' in text):
+                        # محاولة استخراج القيمة من نفس العنصر أو العنصر التالي
+                        cleaned = text
+                        for label in ['مركزك الإنتخابي:', 'مركزك الانتخابي:', 'المركز الانتخابي:', 'مركز الانتخاب:']:
+                            cleaned = cleaned.replace(label, '')
+                        cleaned = cleaned.strip()
+                        if cleaned and len(cleaned) > 2:
+                            result['مركز_الانتخاب'] = cleaned
+                    
+                    elif 'عنوان' in text and not result['العنوان']:
+                        cleaned = text.replace('العنوان:', '').replace('عنوان اللجنة:', '').strip()
+                        if cleaned and len(cleaned) > 5:
+                            result['العنوان'] = cleaned
+                    
+                    elif 'لجنة' in text and 'فرعية' in text:
+                        cleaned = text.replace('رقم اللجنة الفرعية:', '').replace('اللجنة الفرعية:', '').strip()
+                        if cleaned and len(cleaned) > 0:
+                            result['رقم_اللجنة_الفرعية'] = cleaned
+                    
+                    elif 'كشوف' in text or 'رقمك' in text:
+                        cleaned = text.replace('رقمك في الكشوف الانتخابية:', '').replace('رقمك في الكشوف:', '').replace('الرقم في الكشوف:', '').strip()
+                        if cleaned and len(cleaned) > 0:
+                            result['الرقم_في_الكشوف'] = cleaned
             
             # التحقق من وجود أي بيانات
             if any([result['مركز_الانتخاب'], result['العنوان'], 
                     result['رقم_اللجنة_الفرعية'], result['الرقم_في_الكشوف']]):
                 result['status'] = 'success'
+                print(f"  ✓ تم استخراج: المركز={result['مركز_الانتخاب'][:30] if result['مركز_الانتخاب'] else 'غير متوفر'}")
             else:
                 result['status'] = 'no_data'
                 result['error_message'] = 'لم يتم العثور على بيانات - قد يحتاج الكود للتحديث حسب هيكل الموقع'
