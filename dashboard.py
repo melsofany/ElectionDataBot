@@ -10,10 +10,14 @@ import time
 from flask import Flask, render_template, jsonify
 from datetime import datetime
 import threading
+import subprocess
+import sys
 
 app = Flask(__name__)
 
 PROGRESS_FILE = "progress.json"
+bot_process = None
+bot_thread = None
 
 def get_progress():
     """قراءة ملف التقدم"""
@@ -24,19 +28,38 @@ def get_progress():
 
 def get_logs():
     """قراءة آخر السجلات"""
-    log_files = [f for f in os.listdir('/tmp/logs') if 'Voter_Inquiry_Bot' in f]
-    if not log_files:
-        return "لا توجد سجلات بعد..."
-    
-    latest_log = sorted(log_files)[-1]
-    log_path = f'/tmp/logs/{latest_log}'
-    
     try:
+        if not os.path.exists('/tmp/logs'):
+            return "في انتظار بدء العملية..."
+        
+        log_files = [f for f in os.listdir('/tmp/logs') if 'Voter_Inquiry_Bot' in f]
+        if not log_files:
+            return "في انتظار بدء العملية..."
+        
+        latest_log = sorted(log_files)[-1]
+        log_path = f'/tmp/logs/{latest_log}'
+        
         with open(log_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
-            return ''.join(lines[-50:])  # آخر 50 سطر
-    except:
-        return "خطأ في قراءة السجلات"
+            return ''.join(lines[-50:])
+    except Exception as e:
+        return f"في انتظار بدء العملية...\n(Debug: {str(e)})"
+
+def run_bot():
+    """تشغيل البوت في thread منفصل"""
+    global bot_process
+    try:
+        bot_process = subprocess.Popen(
+            [sys.executable, "main.py"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True
+        )
+        
+        for line in bot_process.stdout:
+            pass
+    except Exception as e:
+        print(f"خطأ في تشغيل البوت: {str(e)}")
 
 @app.route('/')
 def index():
@@ -49,10 +72,51 @@ def status():
     progress = get_progress()
     logs = get_logs()
     
+    global bot_process
+    is_running = bot_process is not None and bot_process.poll() is None
+    
     return jsonify({
         'progress': progress,
         'logs': logs,
-        'timestamp': datetime.now().isoformat()
+        'timestamp': datetime.now().isoformat(),
+        'bot_running': is_running
+    })
+
+@app.route('/api/start', methods=['POST'])
+def start_bot():
+    """بدء تشغيل البوت"""
+    global bot_thread, bot_process
+    
+    if bot_process and bot_process.poll() is None:
+        return jsonify({
+            'success': False,
+            'message': 'البوت يعمل بالفعل'
+        })
+    
+    bot_thread = threading.Thread(target=run_bot, daemon=True)
+    bot_thread.start()
+    
+    return jsonify({
+        'success': True,
+        'message': 'تم بدء البوت بنجاح'
+    })
+
+@app.route('/api/stop', methods=['POST'])
+def stop_bot():
+    """إيقاف البوت"""
+    global bot_process
+    
+    if bot_process and bot_process.poll() is None:
+        bot_process.terminate()
+        bot_process.wait(timeout=5)
+        return jsonify({
+            'success': True,
+            'message': 'تم إيقاف البوت'
+        })
+    
+    return jsonify({
+        'success': False,
+        'message': 'البوت غير مشغل'
     })
 
 if __name__ == '__main__':

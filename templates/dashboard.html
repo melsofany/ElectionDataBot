@@ -126,6 +126,38 @@
             margin-bottom: 20px;
             text-align: center;
         }
+        
+        .control-btn {
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .control-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .start-btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+        }
+        
+        .stop-btn {
+            background: linear-gradient(135deg, #f44336 0%, #da190b 100%);
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -135,6 +167,14 @@
         <div class="header">
             <h1>🗳️ لوحة تحكم بوت الاستعلام عن بيانات الناخبين</h1>
             <p>مراقبة التقدم والنتائج في الوقت الفعلي</p>
+            <div style="margin-top: 20px;">
+                <button id="startBtn" class="control-btn start-btn" onclick="startBot()">
+                    ▶️ بدء العملية
+                </button>
+                <button id="stopBtn" class="control-btn stop-btn" onclick="stopBot()" disabled>
+                    ⏸️ إيقاف العملية
+                </button>
+            </div>
         </div>
         
         <div id="credentialsAlert" class="alert" style="display:none;">
@@ -143,6 +183,9 @@
         
         <div id="emptySheetAlert" class="alert" style="display:none; background: #2196F3;">
             📋 Google Sheet متصل بنجاح! يرجى إضافة بيانات الناخبين في ورقة "Voters"
+        </div>
+        
+        <div id="messageAlert" class="alert" style="display:none; background: #4CAF50;">
         </div>
         
         <div class="status-card">
@@ -186,6 +229,68 @@
             });
         }
         
+        function showMessage(message, type = 'success') {
+            const alert = document.getElementById('messageAlert');
+            alert.textContent = message;
+            alert.style.background = type === 'success' ? '#4CAF50' : '#f44336';
+            alert.style.display = 'block';
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+        
+        async function startBot() {
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            
+            startBtn.disabled = true;
+            startBtn.textContent = '⏳ جاري البدء...';
+            
+            try {
+                const response = await fetch('/api/start', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('✅ ' + data.message, 'success');
+                    stopBtn.disabled = false;
+                } else {
+                    showMessage('⚠️ ' + data.message, 'error');
+                    startBtn.disabled = false;
+                }
+            } catch (error) {
+                showMessage('❌ خطأ في الاتصال', 'error');
+                startBtn.disabled = false;
+            } finally {
+                startBtn.textContent = '▶️ بدء العملية';
+            }
+        }
+        
+        async function stopBot() {
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            
+            stopBtn.disabled = true;
+            stopBtn.textContent = '⏳ جاري الإيقاف...';
+            
+            try {
+                const response = await fetch('/api/stop', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('✅ ' + data.message, 'success');
+                    startBtn.disabled = false;
+                } else {
+                    showMessage('⚠️ ' + data.message, 'error');
+                    stopBtn.disabled = false;
+                }
+            } catch (error) {
+                showMessage('❌ خطأ في الاتصال', 'error');
+                stopBtn.disabled = false;
+            } finally {
+                stopBtn.textContent = '⏸️ إيقاف العملية';
+            }
+        }
+        
         async function updateStatus() {
             const indicator = document.getElementById('refreshIndicator');
             indicator.style.display = 'block';
@@ -202,7 +307,17 @@
                 logsContainer.textContent = data.logs;
                 logsContainer.scrollTop = logsContainer.scrollHeight;
                 
-                // إخفاء جميع التنبيهات أولاً
+                const startBtn = document.getElementById('startBtn');
+                const stopBtn = document.getElementById('stopBtn');
+                
+                if (data.bot_running) {
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                } else {
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                }
+                
                 document.getElementById('credentialsAlert').style.display = 'none';
                 document.getElementById('emptySheetAlert').style.display = 'none';
                 
@@ -214,12 +329,14 @@
                     document.getElementById('status').textContent = '⚠️ في انتظار الإعداد';
                 } else if (data.logs.includes('✓ اكتملت المعالجة بنجاح')) {
                     document.getElementById('status').textContent = '✅ مكتمل';
-                } else if (data.progress.total_processed > 0) {
+                } else if (data.bot_running) {
                     document.getElementById('status').textContent = '🔄 يعمل';
+                } else if (data.progress.total_processed > 0) {
+                    document.getElementById('status').textContent = '⏸️ متوقف';
                 } else if (data.logs.includes('✓ تم الاتصال بنجاح')) {
                     document.getElementById('status').textContent = '🔗 متصل';
                 } else {
-                    document.getElementById('status').textContent = '⏸️ متوقف';
+                    document.getElementById('status').textContent = '⏸️ في انتظار البدء';
                 }
                 
             } catch (error) {
