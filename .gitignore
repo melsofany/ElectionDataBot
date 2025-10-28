@@ -62,3 +62,7 @@ Thumbs.db
 # Replit
 .replit
 replit.nix
+.pythonlibs/
+
+# Logs
+/tmp/logs/

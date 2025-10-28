@@ -13,6 +13,14 @@ This is an automated tool that extracts voter information from the Egyptian High
 ```
 
 ## Recent Changes
+- 2025-10-28: **إعداد المشروع في بيئة Replit بنجاح** ✅
+  - تم تثبيت Chromium و ChromeDriver لـ Selenium
+  - تم إعداد تكامل Google Sheets مع Replit
+  - تم إنشاء workflow لـ Dashboard على المنفذ 5000
+  - تم إعداد deployment configuration (VM mode)
+  - Dashboard يعمل بنجاح ويعرض الإحصائيات والسجلات
+  - الاتصال بـ Google Sheets تم اختباره ويعمل بشكل صحيح
+
 - 2025-10-28: **إصلاح شامل لاستخراج البيانات من موقع الانتخابات** ✅
   - **المشكلة المكتشفة**: 
     * الكود كان يدخل على iframe خاطئ (إعلانات cookies بدلاً من iframe الاستعلام)

@@ -13,6 +13,9 @@ def get_access_token():
     """الحصول على access token من Replit Connector"""
     hostname = os.environ.get('REPLIT_CONNECTORS_HOSTNAME')
     
+    if not hostname:
+        raise Exception('REPLIT_CONNECTORS_HOSTNAME غير موجود في المتغيرات البيئية')
+    
     # الحصول على X_REPLIT_TOKEN
     repl_identity = os.environ.get('REPL_IDENTITY')
     web_repl_renewal = os.environ.get('WEB_REPL_RENEWAL')
@@ -31,30 +34,33 @@ def get_access_token():
         'X_REPLIT_TOKEN': x_replit_token
     }
     
-    response = requests.get(url, headers=headers)
-    
-    if response.status_code != 200:
-        raise Exception(f'فشل الحصول على الاتصال: {response.status_code}')
-    
-    data = response.json()
-    items = data.get('items', [])
-    
-    if not items:
-        raise Exception('لم يتم العثور على اتصال Google Sheets')
-    
-    connection = items[0]
-    settings = connection.get('settings', {})
-    
-    # محاولة الحصول على access token من مواقع مختلفة
-    access_token = (
-        settings.get('access_token') or
-        settings.get('oauth', {}).get('credentials', {}).get('access_token')
-    )
-    
-    if not access_token:
-        raise Exception('لم يتم العثور على access token في الاتصال')
-    
-    return access_token
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        
+        if response.status_code != 200:
+            raise Exception(f'فشل الحصول على الاتصال: {response.status_code} - {response.text}')
+        
+        data = response.json()
+        items = data.get('items', [])
+        
+        if not items:
+            raise Exception('لم يتم العثور على اتصال Google Sheets. تأكد من إعداد التكامل في Replit.')
+        
+        connection = items[0]
+        settings = connection.get('settings', {})
+        
+        # محاولة الحصول على access token من مواقع مختلفة
+        access_token = (
+            settings.get('access_token') or
+            settings.get('oauth', {}).get('credentials', {}).get('access_token')
+        )
+        
+        if not access_token:
+            raise Exception('لم يتم العثور على access token في الاتصال')
+        
+        return access_token
+    except requests.exceptions.RequestException as e:
+        raise Exception(f'خطأ في الاتصال بـ Replit Connectors: {str(e)}')
 
 def get_google_sheets_client():
     """إنشاء client لـ Google Sheets باستخدام Replit Connector"""
