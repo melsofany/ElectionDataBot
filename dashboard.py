@@ -29,37 +29,55 @@ def get_progress():
 def get_logs():
     """قراءة آخر السجلات"""
     try:
-        if not os.path.exists('/tmp/logs'):
-            return "في انتظار بدء العملية..."
+        # محاولة قراءة ملف سجل البوت
+        bot_log_file = "bot_output.log"
         
-        log_files = [f for f in os.listdir('/tmp/logs') if 'Voter_Inquiry_Bot' in f]
-        if not log_files:
-            return "في انتظار بدء العملية..."
+        if os.path.exists(bot_log_file):
+            with open(bot_log_file, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                if lines:
+                    # إرجاع آخر 100 سطر
+                    return ''.join(lines[-100:])
         
-        latest_log = sorted(log_files)[-1]
-        log_path = f'/tmp/logs/{latest_log}'
+        # إذا لم يوجد ملف السجل، التحقق من وجود progress
+        if os.path.exists(PROGRESS_FILE):
+            progress = get_progress()
+            if progress.get('total_processed', 0) > 0:
+                return f"✓ البوت يعمل...\n✓ تمت معالجة {progress['total_processed']} صف\n\nللمزيد من التفاصيل، شغّل البوت مرة أخرى..."
         
-        with open(log_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-            return ''.join(lines[-50:])
+        return "📋 في انتظار بدء العملية...\n\nاضغط على زر 'بدء العملية' للبدء في معالجة الأرقام القومية"
+        
     except Exception as e:
-        return f"في انتظار بدء العملية...\n(Debug: {str(e)})"
+        return f"⏳ في انتظار بدء العملية...\n\n(للمطورين: {str(e)})"
 
 def run_bot():
     """تشغيل البوت في thread منفصل"""
     global bot_process
     try:
-        bot_process = subprocess.Popen(
-            [sys.executable, "main.py"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            universal_newlines=True
-        )
+        # فتح ملف لحفظ السجلات
+        log_file_path = "bot_output.log"
         
-        for line in bot_process.stdout:
-            pass
+        with open(log_file_path, 'w', encoding='utf-8') as log_file:
+            bot_process = subprocess.Popen(
+                [sys.executable, "main.py"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                universal_newlines=True,
+                bufsize=1  # Line buffered
+            )
+            
+            # قراءة وكتابة السجلات سطر بسطر
+            for line in bot_process.stdout:
+                log_file.write(line)
+                log_file.flush()  # تأكد من الكتابة الفورية
+                print(line, end='')  # طباعة في الكونسول أيضاً
+                
     except Exception as e:
-        print(f"خطأ في تشغيل البوت: {str(e)}")
+        error_msg = f"خطأ في تشغيل البوت: {str(e)}\n"
+        print(error_msg)
+        # كتابة الخطأ في ملف السجل
+        with open("bot_output.log", 'a', encoding='utf-8') as f:
+            f.write(error_msg)
 
 @app.route('/')
 def index():
