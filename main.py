@@ -422,45 +422,81 @@ class VoterInquiryBot:
                 
                 # إذا لم نجد البيانات في الجدول، نبحث في العناصر بطريقة مختلفة
                 if not result['مركز_الانتخاب']:
-                    elements = self.driver.find_elements(By.XPATH, "//*[contains(text(), 'مركز') or contains(text(), 'المركز') or contains(text(), 'لجنة') or contains(text(), 'عنوان') or contains(text(), 'كشوف')]")
+                    # استراتيجية جديدة: ابحث عن عنصر "العنوان" أولاً، ثم احصل على العنصر السابق له (المركز الانتخابي)
+                    try:
+                        address_elements = self.driver.find_elements(By.XPATH, "//*[contains(text(), 'عنوان') or contains(text(), 'العنوان')]")
+                        
+                        for addr_elem in address_elements:
+                            addr_text = addr_elem.text.strip()
+                            
+                            # تأكد أن هذا هو عنصر التسمية وليس القيمة
+                            if 'عنوان' in addr_text.lower() and len(addr_text) < 50:
+                                try:
+                                    # محاولة الحصول على العنصر السابق (المركز الانتخابي)
+                                    prev_elem = addr_elem.find_element(By.XPATH, "preceding-sibling::*[1]")
+                                    if prev_elem:
+                                        prev_text = prev_elem.text.strip()
+                                        if prev_text and len(prev_text) > 2 and not result['مركز_الانتخاب']:
+                                            result['مركز_الانتخاب'] = prev_text
+                                            print(f"  ✓ وجدت المركز الانتخابي من العنصر السابق للعنوان: {prev_text}")
+                                    
+                                    # الحصول على العنوان من العنصر التالي
+                                    next_elem = addr_elem.find_element(By.XPATH, "following-sibling::*[1]")
+                                    if next_elem and not result['العنوان']:
+                                        addr_value = next_elem.text.strip()
+                                        if addr_value and len(addr_value) > 5:
+                                            result['العنوان'] = addr_value
+                                            print(f"  ✓ وجدت العنوان: {addr_value}")
+                                    
+                                    # إذا وجدنا البيانات، نوقف البحث
+                                    if result['مركز_الانتخاب'] and result['العنوان']:
+                                        break
+                                except Exception as sibling_error:
+                                    continue
+                    except Exception as addr_error:
+                        print(f"  تحذير: خطأ في البحث عن العنوان: {str(addr_error)}")
                     
-                    for element in elements:
-                        element_text = element.text.strip()
-                        parent_text = element.find_element(By.XPATH, "..").text.strip() if element else ""
+                    # الطريقة القديمة كاحتياطي
+                    if not result['مركز_الانتخاب']:
+                        elements = self.driver.find_elements(By.XPATH, "//*[contains(text(), 'مركز') or contains(text(), 'المركز') or contains(text(), 'لجنة') or contains(text(), 'عنوان') or contains(text(), 'كشوف')]")
                         
-                        # محاولة استخراج المركز الانتخابي
-                        if ('مركز' in element_text.lower() and 'انتخاب' in element_text.lower()) or 'المركز' in element_text:
-                            # محاولة الحصول على القيمة من النص الكامل
-                            full_text = parent_text if parent_text else element_text
-                            for label in ['مركزك الإنتخابي:', 'مركزك الانتخابي:', 'المركز الانتخابي:', 'مركز الانتخاب:']:
-                                if label in full_text:
-                                    result['مركز_الانتخاب'] = full_text.replace(label, '').strip()
-                                    break
+                        for element in elements:
+                            element_text = element.text.strip()
+                            parent_text = element.find_element(By.XPATH, "..").text.strip() if element else ""
                             
-                            # إذا لم نجد القيمة، نحاول الحصول على العنصر التالي
-                            if not result['مركز_الانتخاب']:
-                                try:
-                                    next_elem = element.find_element(By.XPATH, "following-sibling::*[1]")
-                                    if next_elem and next_elem.text.strip():
-                                        result['مركز_الانتخاب'] = next_elem.text.strip()
-                                except:
-                                    pass
-                        
-                        # استخراج العنوان
-                        if 'عنوان' in element_text.lower() and not result['العنوان']:
-                            full_text = parent_text if parent_text else element_text
-                            for label in ['العنوان:', 'عنوان اللجنة:', 'عنوان المركز:']:
-                                if label in full_text:
-                                    result['العنوان'] = full_text.replace(label, '').strip()
-                                    break
+                            # محاولة استخراج المركز الانتخابي
+                            if ('مركز' in element_text.lower() and 'انتخاب' in element_text.lower()) or 'المركز' in element_text:
+                                # محاولة الحصول على القيمة من النص الكامل
+                                full_text = parent_text if parent_text else element_text
+                                for label in ['مركزك الإنتخابي:', 'مركزك الانتخابي:', 'المركز الانتخابي:', 'مركز الانتخاب:']:
+                                    if label in full_text:
+                                        result['مركز_الانتخاب'] = full_text.replace(label, '').strip()
+                                        break
+                                
+                                # إذا لم نجد القيمة، نحاول الحصول على العنصر التالي
+                                if not result['مركز_الانتخاب']:
+                                    try:
+                                        next_elem = element.find_element(By.XPATH, "following-sibling::*[1]")
+                                        if next_elem and next_elem.text.strip():
+                                            result['مركز_الانتخاب'] = next_elem.text.strip()
+                                    except:
+                                        pass
                             
-                            if not result['العنوان']:
-                                try:
-                                    next_elem = element.find_element(By.XPATH, "following-sibling::*[1]")
-                                    if next_elem and next_elem.text.strip():
-                                        result['العنوان'] = next_elem.text.strip()
-                                except:
-                                    pass
+                            # استخراج العنوان
+                            if 'عنوان' in element_text.lower() and not result['العنوان']:
+                                full_text = parent_text if parent_text else element_text
+                                for label in ['العنوان:', 'عنوان اللجنة:', 'عنوان المركز:']:
+                                    if label in full_text:
+                                        result['العنوان'] = full_text.replace(label, '').strip()
+                                        break
+                                
+                                if not result['العنوان']:
+                                    try:
+                                        next_elem = element.find_element(By.XPATH, "following-sibling::*[1]")
+                                        if next_elem and next_elem.text.strip():
+                                            result['العنوان'] = next_elem.text.strip()
+                                    except:
+                                        pass
                         
                         # استخراج رقم اللجنة
                         if 'لجنة' in element_text.lower() and 'فرعية' in element_text.lower():
