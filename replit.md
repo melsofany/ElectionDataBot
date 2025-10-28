@@ -3,6 +3,9 @@
 ## Overview
 This is an automated tool that extracts voter information from the Egyptian Higher Elections Commission website using national IDs stored in Google Sheets. The bot reads national IDs from a Google Sheet, queries the elections website for each ID, and writes the results to a new sheet.
 
+**Status**: ✅ Fully configured and ready to use in Replit environment
+**Dashboard**: Running on port 5000 with real-time monitoring
+
 ## ✅ Replit Environment Setup (2025-10-28)
 The project has been successfully configured to run in Replit:
 - ✅ Google Sheets integration connected and working
@@ -22,6 +25,19 @@ The project has been successfully configured to run in Replit:
 ```
 
 ## Recent Changes
+
+- 2025-10-28: **تحسينات شاملة لاستخراج مركز الانتخاب** ✅
+  - **المشكلة المُحلّة**: كان مركز الانتخاب (العمود C) يظهر فارغاً
+  - **التحسينات الجديدة**:
+    * إضافة 8 أنماط بحث مختلفة لمركز الانتخاب
+    * البحث في نفس السطر إذا كانت القيمة تحتوي على `:`
+    * طباعة عينة من نص الصفحة (أول 500 حرف) للتشخيص
+    * حفظ ملف HTML تلقائياً عند فشل الاستخراج: `debug_page_[رقم_قومي].html`
+    * شروط تحقق محسّنة لتجنب البيانات الخاطئة
+    * دعم أفضل للنصوص العربية والهمزات المختلفة
+  - **النتيجة**: البرنامج الآن أكثر فعالية في استخراج البيانات من هياكل صفحات مختلفة
+
+
 - 2025-10-28: **تحديث شامل لاستخراج البيانات ليتوافق مع هيكل الموقع الجديد** ✅
   - **التحسينات الجديدة**:
     * إضافة طريقة جديدة لاستخراج البيانات من النص المباشر للصفحة

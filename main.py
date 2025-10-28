@@ -335,44 +335,132 @@ class VoterInquiryBot:
                 # الحصول على النص الكامل للصفحة
                 page_full_text = self.driver.find_element(By.TAG_NAME, "body").text
                 
+                # حفظ HTML للتحليل إذا لم نجد البيانات
+                page_html = self.driver.page_source
+                
+                # طباعة جزء من النص للتحليل
+                print(f"  📄 عينة من نص الصفحة (أول 500 حرف):\n{page_full_text[:500]}\n")
+                
                 # تقسيم النص إلى أسطر للبحث الدقيق
                 lines = page_full_text.split('\n')
                 
+                # أنماط بحث محتملة لمركز الانتخاب
+                center_patterns = [
+                    'مركزك الإنتخابي', 'مركزك الانتخابي', 'المركز الانتخابي',
+                    'اسم اللجنة', 'اللجنة الانتخابية', 'مقر اللجنة',
+                    'موقعك الانتخابي', 'لجنتك الانتخابية'
+                ]
+                
+                # أنماط بحث للعنوان
+                address_patterns = ['العنوان', 'عنوان اللجنة', 'العنوان التفصيلي']
+                
+                # أنماط بحث لرقم اللجنة
+                committee_patterns = ['رقم اللجنة الفرعية', 'اللجنة الفرعية', 'رقم اللجنة']
+                
+                # أنماط بحث للرقم في الكشوف
+                list_patterns = ['رقمك في الكشوف', 'رقمك بالكشوف', 'الرقم في الكشوف', 'رقم تسلسلي']
+                
                 # البحث عن البيانات باستخدام الأسطر
                 for i, line in enumerate(lines):
-                    line = line.strip()
+                    line_clean = line.strip()
                     
-                    # استخراج مركز الانتخاب
-                    if 'مركزك الإنتخابي' in line or 'مركزك الانتخابي' in line:
-                        if i + 1 < len(lines):
-                            next_line = lines[i + 1].strip()
-                            if next_line and not any(keyword in next_line for keyword in ['محافظة', 'قسم', 'العنوان']):
-                                result['مركز_الانتخاب'] = next_line
-                                print(f"  ✓ وجدت المركز الانتخابي: {next_line}")
+                    # استخراج مركز الانتخاب - البحث بأنماط متعددة
+                    if not result['مركز_الانتخاب']:
+                        for pattern in center_patterns:
+                            if pattern in line_clean:
+                                # البحث في السطر الحالي أولاً (إذا كانت القيمة في نفس السطر)
+                                if ':' in line_clean:
+                                    parts = line_clean.split(':', 1)
+                                    if len(parts) > 1:
+                                        value = parts[1].strip()
+                                        if value and len(value) > 3:
+                                            result['مركز_الانتخاب'] = value
+                                            print(f"  ✓ وجدت المركز الانتخابي (من نفس السطر): {value}")
+                                            break
+                                
+                                # البحث في السطر التالي
+                                if i + 1 < len(lines) and not result['مركز_الانتخاب']:
+                                    next_line = lines[i + 1].strip()
+                                    if next_line and len(next_line) > 3:
+                                        # التأكد من أنه ليس تسمية أخرى
+                                        if not any(kw in next_line for kw in ['محافظة', 'قسم', 'العنوان', 'رقم']):
+                                            result['مركز_الانتخاب'] = next_line
+                                            print(f"  ✓ وجدت المركز الانتخابي: {next_line}")
+                                            break
                     
                     # استخراج العنوان
-                    elif 'العنوان' in line and ':' in line:
-                        if i + 1 < len(lines):
-                            next_line = lines[i + 1].strip()
-                            if next_line and not any(keyword in next_line for keyword in ['رقم', 'تاريخ', 'كثافة']):
-                                result['العنوان'] = next_line
-                                print(f"  ✓ وجدت العنوان: {next_line}")
+                    if not result['العنوان']:
+                        for pattern in address_patterns:
+                            if pattern in line_clean:
+                                # البحث في السطر الحالي
+                                if ':' in line_clean:
+                                    parts = line_clean.split(':', 1)
+                                    if len(parts) > 1:
+                                        value = parts[1].strip()
+                                        if value and len(value) > 5:
+                                            result['العنوان'] = value
+                                            print(f"  ✓ وجدت العنوان (من نفس السطر): {value}")
+                                            break
+                                
+                                # البحث في السطر التالي
+                                if i + 1 < len(lines) and not result['العنوان']:
+                                    next_line = lines[i + 1].strip()
+                                    if next_line and len(next_line) > 5:
+                                        if not any(kw in next_line for kw in ['رقم', 'تاريخ', 'كثافة', 'لجنة']):
+                                            result['العنوان'] = next_line
+                                            print(f"  ✓ وجدت العنوان: {next_line}")
+                                            break
                     
                     # استخراج رقم اللجنة الفرعية
-                    elif 'رقم اللجنة الفرعية' in line:
-                        if i + 1 < len(lines):
-                            next_line = lines[i + 1].strip()
-                            if next_line:
-                                result['رقم_اللجنة_الفرعية'] = next_line
-                                print(f"  ✓ وجدت رقم اللجنة: {next_line}")
+                    if not result['رقم_اللجنة_الفرعية']:
+                        for pattern in committee_patterns:
+                            if pattern in line_clean:
+                                # البحث في السطر الحالي
+                                if ':' in line_clean:
+                                    parts = line_clean.split(':', 1)
+                                    if len(parts) > 1:
+                                        value = parts[1].strip()
+                                        if value:
+                                            result['رقم_اللجنة_الفرعية'] = value
+                                            print(f"  ✓ وجدت رقم اللجنة (من نفس السطر): {value}")
+                                            break
+                                
+                                # البحث في السطر التالي
+                                if i + 1 < len(lines) and not result['رقم_اللجنة_الفرعية']:
+                                    next_line = lines[i + 1].strip()
+                                    if next_line:
+                                        result['رقم_اللجنة_الفرعية'] = next_line
+                                        print(f"  ✓ وجدت رقم اللجنة: {next_line}")
+                                        break
                     
                     # استخراج الرقم في الكشوف
-                    elif 'رقمك في الكشوف' in line:
-                        if i + 1 < len(lines):
-                            next_line = lines[i + 1].strip()
-                            if next_line:
-                                result['الرقم_في_الكشوف'] = next_line
-                                print(f"  ✓ وجدت الرقم في الكشوف: {next_line}")
+                    if not result['الرقم_في_الكشوف']:
+                        for pattern in list_patterns:
+                            if pattern in line_clean:
+                                # البحث في السطر الحالي
+                                if ':' in line_clean:
+                                    parts = line_clean.split(':', 1)
+                                    if len(parts) > 1:
+                                        value = parts[1].strip()
+                                        if value:
+                                            result['الرقم_في_الكشوف'] = value
+                                            print(f"  ✓ وجدت الرقم في الكشوف (من نفس السطر): {value}")
+                                            break
+                                
+                                # البحث في السطر التالي
+                                if i + 1 < len(lines) and not result['الرقم_في_الكشوف']:
+                                    next_line = lines[i + 1].strip()
+                                    if next_line:
+                                        result['الرقم_في_الكشوف'] = next_line
+                                        print(f"  ✓ وجدت الرقم في الكشوف: {next_line}")
+                                        break
+                
+                # حفظ HTML إذا لم نجد مركز الانتخاب (للتحليل)
+                if not result['مركز_الانتخاب']:
+                    debug_filename = f"debug_page_{national_id}.html"
+                    with open(debug_filename, 'w', encoding='utf-8') as f:
+                        f.write(page_html)
+                    print(f"  ⚠️ لم يتم العثور على مركز الانتخاب - تم حفظ HTML في {debug_filename}")
                 
                 # إذا وجدنا أي بيانات، نعتبر الاستخراج ناجحاً
                 if any([result['مركز_الانتخاب'], result['العنوان'], 
