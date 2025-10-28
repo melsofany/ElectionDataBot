@@ -1,0 +1,79 @@
+<html lang="ar" class="nid-html"><head><meta http-equiv="origin-trial" content="A7vZI3v+Gz7JfuRolKNM4Aff6zaGuT7X0mf3wtoZTnKv6497cVMnhy03KDqX7kBz/q/iidW7srW31oQbBt4VhgoAAACUeyJvcmlnaW4iOiJodHRwczovL3d3dy5nb29nbGUuY29tOjQ0MyIsImZlYXR1cmUiOiJEaXNhYmxlVGhpcmRQYXJ0eVN0b3JhZ2VQYXJ0aXRpb25pbmczIiwiZXhwaXJ5IjoxNzU3OTgwODAwLCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ==">
+    <meta http-equiv="X-UA-Compatible" content="IE=8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="/css/bootstrap.min-ar.css" rel="stylesheet" type="text/css">
+    <link href="/css/styles.css" rel="stylesheet" type="text/css">
+    <link rel="icon" href="/assets/favicon-f1e37f83.ico" type="image/x-icon">
+    
+    
+    <script type="text/javascript" async="" charset="utf-8" src="https://www.gstatic.com/recaptcha/releases/-PgDGgfmUF0ySmnjMTJjzqak/recaptcha__en.js" crossorigin="anonymous" integrity="sha384-H0mK+IQhANprBblOQEFWq1PDr55lbDWwZEd/GMAA78NROK5AjZuV3DFPdQEXCj2o"></script><script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCNye4hCPOkdfE9PN7hyrgEOfnZIbwEujc&amp;sensor=false"></script>
+    <script src="https://www.google.com/recaptcha/api.js"></script>
+
+    <title>خدمة الاستعلام عن اللجان الانتخابية</title>
+    <script type="module" crossorigin="" src="/assets/gadget-6375c72d.js"></script>
+  <script type="text/javascript" charset="UTF-8" src="https://maps.googleapis.com/maps-api-v3/api/js/62/11d/common.js"></script><script type="text/javascript" charset="UTF-8" src="https://maps.googleapis.com/maps-api-v3/api/js/62/11d/util.js"></script></head>
+  <body>
+    <div id="spinner" style="display: none;"></div>
+
+    <ul id="tabs" class="nav nav-tabs" style="">
+      <li class=""><a id="L_search_tab" href="#search" data-toggle="tab">استعلام</a></li>
+      <li class="active"><a id="L_details_tab" href="#result-div" data-toggle="tab" style="">النتيجة</a></li>
+      <li><a id="L_map_tab" href="#map" data-toggle="tab" style="display:none;">الخريطة</a></li>
+    </ul>
+
+    <div class="print"><a href="javascript:void(0)" class="btn btn-default" id="print_link" style="display:none;"><span class="print-icon"></span> طباعة</a></div>
+
+    <div class="tab-content" style="">
+      <div class="tab-pane nid-wrapper" id="search" style="display: none;">
+      	<div class="nid-content" id="L_GadgetDiv">
+          <h1 id="gadget-header">الاستعلام عن لجنتك الانتخابية</h1>
+          <h3 id="gadget-description" class="fontNormal">للاستعلام عن مكان لجنتك الانتخابية ورقم اللجنة الفرعية و رقمك في الكشوف الانتخابية، برجاء ادخال رقمك القومي المكون من 14 رقم</h3>
+
+          <form class="nid-form col-xs-7 center-block" id="L_GadgetForm" action="javascript:void(0)" novalidate="novalidate">
+            <div class="form-group custom ">
+              <div class="col-xs-8">
+                <input pattern="[0-9]*" placeholder="الرقم القومي المكون من 14 رقماً" id="nid" name="nid" type="text" class="form-control custom valid" aria-invalid="false">
+              </div>
+              <div class="col-xs-4">
+                <input type="submit" id="submit_btn" class="col-xs-12 btn btn-danger custom" value="استعلم">
+              </div>
+
+              <!-- Display hidden captcha-->
+              <div id="recaptcha_div_placeholder"></div>
+            </div>
+          </form>
+          <!-- <h5 class="fontNormal">ويمكنك أيضاً الاستعلام عن طريق الإتصال برقم 141</h5> -->
+        </div><!--end nid-content-->
+      </div><!--end nid-wrapper-->
+      <div class="tab-pane active" id="result-div">
+  <div class="alert alert-danger">
+    <h2>الرقم القومي (29012011234567) ليس له حق الانتخاب</h2>
+  </div>
+  <h3>الرقم القومي غير مدرج بقاعدة بيانات الناخبين</h3>
+  
+</div>
+      <div class="tab-pane" id="map"></div>
+    </div>
+
+    <div id="unauthorized_content" style="display:none;">
+      <p>هذا الموقع غير مصرح له الاستعلام عن قاعدة بيانات الناخبين. للاستعلام برجاء زيارة الموقع الرسمي للهيئة الوطنية للانتخابات <a href="https://www.elections.eg" target="_blank">elections.eg</a></p>
+      <img id="unauthorized_img">
+    </div>
+
+    <div id="templates"><script type="text/x-jquery-tmpl" id="rejected-template" data-jsv-tmpl="#rejected-template">
+  <div class="alert alert-danger">
+    <h2>{{:~national_id}} ({{:nid}}) {{:~cant_vote}}</h2>
+  </div>
+  <h3>{{:reason_text}}</h3>
+  {{if police_code}}
+    <table cellspacing="0" class="table table-bordered custom">
+      <tr><th>{{:police_name_title}} : </th><td>{{:police_name}}</td></tr>
+      <tr><th>{{:~governorate}} : </th><td>{{:gov_name}}</td></tr>
+    </table>
+  {{/if}}
+</script></div>
+  
+
+</body></html>
