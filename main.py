@@ -225,16 +225,33 @@ class VoterInquiryBot:
             input_field.clear()
             input_field.send_keys(national_id)
             
-            # البحث عن زر الاستعلام
-            try:
-                submit_button = self.driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
-            except:
-                try:
-                    submit_button = self.driver.find_element(By.XPATH, "//button[contains(text(), 'استعلام')]")
-                except:
-                    submit_button = self.driver.find_element(By.CSS_SELECTOR, "button")
+            # البحث عن زر الاستعلام بطرق متعددة
+            submit_button = None
+            button_selectors = [
+                (By.CSS_SELECTOR, "button[type='submit']"),
+                (By.CSS_SELECTOR, "input[type='submit']"),
+                (By.XPATH, "//button[contains(text(), 'استعلام')]"),
+                (By.XPATH, "//input[@value='استعلام']"),
+                (By.XPATH, "//a[contains(text(), 'استعلام')]"),
+                (By.CSS_SELECTOR, "button"),
+                (By.CSS_SELECTOR, "input[type='button']"),
+                (By.TAG_NAME, "button"),
+            ]
             
-            submit_button.click()
+            for selector_type, selector_value in button_selectors:
+                try:
+                    submit_button = self.driver.find_element(selector_type, selector_value)
+                    if submit_button:
+                        break
+                except:
+                    continue
+            
+            if submit_button:
+                submit_button.click()
+            else:
+                # إذا لم نجد زر، نحاول إرسال النموذج مباشرة
+                from selenium.webdriver.common.keys import Keys
+                input_field.send_keys(Keys.RETURN)
             
             # انتظار النتائج
             time.sleep(4)
