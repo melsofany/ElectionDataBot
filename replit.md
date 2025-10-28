@@ -3,6 +3,15 @@
 ## Overview
 This is an automated tool that extracts voter information from the Egyptian Higher Elections Commission website using national IDs stored in Google Sheets. The bot reads national IDs from a Google Sheet, queries the elections website for each ID, and writes the results to a new sheet.
 
+## ✅ Replit Environment Setup (2025-10-28)
+The project has been successfully configured to run in Replit:
+- ✅ Google Sheets integration connected and working
+- ✅ Chromium 138.0.7204.100 and ChromeDriver installed
+- ✅ All Python dependencies installed (62 packages via uv)
+- ✅ Dashboard workflow running on port 5000
+- ✅ Deployment configured (VM mode for continuous operation)
+- ✅ Ready to use - just add voter data to your Google Sheet!
+
 ## Project Structure
 ```
 ├── main.py                 # Main application file
