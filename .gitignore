@@ -41,6 +41,9 @@ authorized_user.json
 chromedriver
 geckodriver
 
+# Debug screenshots
+debug_screenshot_*.png
+
 # Progress tracking
 progress.json
 last_processed.json

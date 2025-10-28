@@ -13,26 +13,24 @@ This is an automated tool that extracts voter information from the Egyptian High
 ```
 
 ## Recent Changes
-- 2025-10-28: **إصلاح حاسم في استخراج المركز الانتخابي** ✅
-  - **تم حل المشكلة**: عكس منطق قراءة خلايا الجدول
-  - المشكلة السابقة: الكود كان يقرأ الخلايا بترتيب معكوس بسبب RTL
-  - الحل: 
-    * الخلية الأولى (cells[0]) = التسمية (مثل "مركزك الانتخابي:")
-    * الخلية الأخيرة (cells[-1]) = القيمة (مثل "الوحدة المحلية براس الحكمة")
-  - إضافة انتظار صريح لظهور النتائج في الجدول قبل الاستخراج
-  - استخدام `cells[0]` للتسمية و `cells[-1]` للقيمة لضمان الدقة
-  - تم التطبيق على كلا من Selenium وBeautifulSoup
-  - ثلاث طرق احتياطية للاستخراج:
-    * الطريقة 1: استخراج مباشر من صفوف الجدول باستخدام Selenium
-    * الطريقة 2: استخراج من الجدول باستخدام BeautifulSoup
-    * الطريقة 3: البحث في العناصر النصية
-  - رسائل تأكيد مفصلة لتتبع عملية الاستخراج
-  - إعداد deployment configuration للنشر على Replit (VM mode)
+- 2025-10-28: **إصلاح شامل لاستخراج البيانات من موقع الانتخابات** ✅
+  - **المشكلة المكتشفة**: 
+    * الكود كان يدخل على iframe خاطئ (إعلانات cookies بدلاً من iframe الاستعلام)
+    * هيكل الموقع تغير - لم يعد يستخدم جداول بل عناصر div/span بمعرفات محددة
+  - **الإصلاحات**:
+    * تحسين اكتشاف iframe الصحيح: البحث عن 'inquiry' أو 'gadget' في src
+    * إضافة آلية احتياطية: البحث في جميع iframes عن حقل الرقم القومي
+    * استخراج بيانات جديد: استخدام IDs محددة (centerName, address, committeeNumber, orderNumber)
+    * إضافة selectors متعددة للعثور على البيانات بطرق مختلفة
+    * حفظ screenshot تلقائي عند فشل الاستخراج للمساعدة في التصحيح
+  - **نتيجة**: البرنامج الآن يدعم هيكل الموقع الجديد مع توافق عكسي للهيكل القديم
+  
 - 2025-10-28: Replit environment setup completed
-  - Installed Chromium 138.0.7204.100 and ChromeDriver 138.0.7204.100 via Nix
+  - Installed Chromium and ChromeDriver via system packages
   - Configured workflow for Flask dashboard (webview on port 5000)
-  - All Python dependencies installed and verified via uv
-  - Environment ready for use - only needs credentials.json upload
+  - All Python dependencies installed via packager tool
+  - Deployment configuration set (VM mode for continuous operation)
+  - Environment ready for use - only needs credentials.json or Google Sheets integration
 - Initial project setup with Google Sheets integration
 - Implemented Selenium automation for elections website with iframe handling
 - Fixed critical zip() bug that was dropping rows when column C shorter than B

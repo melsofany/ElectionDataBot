@@ -194,15 +194,62 @@ class VoterInquiryBot:
             # الانتقال إلى iframe الذي يحتوي على نموذج الاستعلام
             wait = WebDriverWait(self.driver, 15)
             try:
-                # البحث عن iframe
-                iframe = wait.until(
-                    EC.presence_of_element_located((By.TAG_NAME, "iframe"))
-                )
-                self.driver.switch_to.frame(iframe)
-                time.sleep(2)
-            except:
-                # في حالة عدم وجود iframe، نستمر بدون تبديل
-                pass
+                # البحث عن iframe الاستعلام الصحيح (وليس iframe الإعلانات)
+                # محاولة 1: البحث عن iframe يحتوي على 'Inquiry' أو 'inquiry' في src
+                iframe_found = False
+                iframes = self.driver.find_elements(By.TAG_NAME, "iframe")
+                print(f"  وجدت {len(iframes)} إطار iframe")
+                
+                for idx, iframe in enumerate(iframes):
+                    try:
+                        src = iframe.get_attribute('src') or ''
+                        print(f"  iframe {idx}: src={src[:100] if src else 'no src'}")
+                        
+                        # البحث عن iframe الاستعلام
+                        if 'inquiry' in src.lower() or 'gadget' in src.lower():
+                            print(f"  ✓ تم العثور على iframe الاستعلام: {src[:100]}")
+                            self.driver.switch_to.frame(iframe)
+                            iframe_found = True
+                            time.sleep(2)
+                            break
+                    except:
+                        continue
+                
+                # إذا لم نجد iframe بناءً على src، نحاول البحث عن iframe يحتوي على حقل الرقم القومي
+                if not iframe_found and len(iframes) > 0:
+                    print("  محاولة البحث عن iframe من خلال وجود حقل الرقم القومي...")
+                    for idx, iframe in enumerate(iframes):
+                        try:
+                            self.driver.switch_to.default_content()
+                            self.driver.switch_to.frame(iframe)
+                            
+                            # محاولة العثور على حقل الرقم القومي
+                            try:
+                                input_field = self.driver.find_element(By.NAME, "nationalId")
+                                print(f"  ✓ وجدت حقل الرقم القومي في iframe {idx}")
+                                iframe_found = True
+                                time.sleep(2)
+                                break
+                            except:
+                                try:
+                                    input_field = self.driver.find_element(By.ID, "nationalId")
+                                    print(f"  ✓ وجدت حقل الرقم القومي في iframe {idx}")
+                                    iframe_found = True
+                                    time.sleep(2)
+                                    break
+                                except:
+                                    self.driver.switch_to.default_content()
+                                    continue
+                        except:
+                            continue
+                
+                if not iframe_found:
+                    print("  تحذير: لم يتم العثور على iframe مناسب، المتابعة بدون تبديل")
+                    self.driver.switch_to.default_content()
+                    
+            except Exception as e:
+                print(f"  تحذير: خطأ في البحث عن iframe: {str(e)}")
+                self.driver.switch_to.default_content()
             
             # البحث عن حقل الرقم القومي بطرق متعددة
             input_field = None
@@ -281,6 +328,49 @@ class VoterInquiryBot:
                 result['status'] = 'error'
                 result['error_message'] = 'تم اكتشاف Captcha - يرجى المحاولة لاحقاً'
                 return result
+            
+            # الطريقة الجديدة: استخراج البيانات من العناصر المحددة بـ IDs
+            print("  محاولة استخراج البيانات من العناصر المحددة...")
+            try:
+                # انتظار ظهور نتائج الاستعلام
+                wait = WebDriverWait(self.driver, 10)
+                
+                # المحاولة 1: استخراج باستخدام IDs المحددة
+                selectors_map = {
+                    'مركز_الانتخاب': ['centerName', 'center-name', 'votingCenter', 'voting-center', 'المركز'],
+                    'العنوان': ['address', 'centerAddress', 'center-address', 'العنوان'],
+                    'رقم_اللجنة_الفرعية': ['committeeNumber', 'committee-number', 'subCommittee', 'اللجنة'],
+                    'الرقم_في_الكشوف': ['orderNumber', 'order-number', 'listNumber', 'الرقم']
+                }
+                
+                for field_name, possible_ids in selectors_map.items():
+                    for selector_id in possible_ids:
+                        try:
+                            # محاولة بـ ID
+                            element = self.driver.find_element(By.ID, selector_id)
+                            value = element.text.strip()
+                            if value and len(value) > 0:
+                                result[field_name] = value
+                                print(f"  ✓ وجدت {field_name} من ID '{selector_id}': {value}")
+                                break
+                        except:
+                            try:
+                                # محاولة بـ class name
+                                element = self.driver.find_element(By.CLASS_NAME, selector_id)
+                                value = element.text.strip()
+                                if value and len(value) > 0:
+                                    result[field_name] = value
+                                    print(f"  ✓ وجدت {field_name} من CLASS '{selector_id}': {value}")
+                                    break
+                            except:
+                                continue
+                
+                # إذا وجدنا أي بيانات، نعتبر الاستخراج ناجحاً
+                if any([result['مركز_الانتخاب'], result['العنوان'], 
+                       result['رقم_اللجنة_الفرعية'], result['الرقم_في_الكشوف']]):
+                    print("  ✓ تم استخراج البيانات بنجاح من العناصر المحددة")
+            except Exception as e:
+                print(f"  تحذير: خطأ في الاستخراج من العناصر المحددة: {str(e)}")
             
             # الطريقة 1: استخراج البيانات من جدول HTML
             try:
@@ -481,6 +571,14 @@ class VoterInquiryBot:
             else:
                 result['status'] = 'no_data'
                 result['error_message'] = 'لم يتم العثور على بيانات - قد يحتاج الكود للتحديث حسب هيكل الموقع'
+                
+                # حفظ screenshot للمساعدة في التصحيح
+                try:
+                    screenshot_path = f"debug_screenshot_{national_id}.png"
+                    self.driver.save_screenshot(screenshot_path)
+                    print(f"  تم حفظ screenshot في: {screenshot_path}")
+                except Exception as ss_error:
+                    print(f"  تحذير: فشل حفظ screenshot: {str(ss_error)}")
             
             # العودة للصفحة الرئيسية (الخروج من iframe)
             try:
