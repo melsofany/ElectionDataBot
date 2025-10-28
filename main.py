@@ -21,6 +21,13 @@ from bs4 import BeautifulSoup
 import pandas as pd
 from datetime import datetime
 
+# استيراد وحدة الاتصال بـ Google Sheets عبر Replit
+try:
+    from google_sheets_connector import get_google_sheets_client
+    USE_REPLIT_CONNECTOR = True
+except ImportError:
+    USE_REPLIT_CONNECTOR = False
+
 # إعدادات الملفات
 PROGRESS_FILE = "progress.json"
 SPREADSHEET_ID = "1-rCGPx6vyEMm3zmR7ks3xZh63XcJk4ks78e5e9jfuyo"
@@ -58,7 +65,19 @@ class VoterInquiryBot:
         """الاتصال بـ Google Sheets"""
         print("جاري الاتصال بـ Google Sheets...")
         
-        # البحث عن ملف credentials
+        # محاولة استخدام Replit Connector أولاً
+        if USE_REPLIT_CONNECTOR:
+            try:
+                print("  استخدام Replit Google Sheets Connector...")
+                self.gc = get_google_sheets_client()
+                self.spreadsheet = self.gc.open_by_key(SPREADSHEET_ID)
+                print("✓ تم الاتصال بنجاح عبر Replit Connector")
+                return
+            except Exception as e:
+                print(f"  تحذير: فشل الاتصال عبر Replit Connector: {str(e)}")
+                print("  محاولة استخدام ملف credentials.json...")
+        
+        # الطريقة التقليدية: البحث عن ملف credentials
         creds_paths = [
             "credentials.json",
             "service_account.json",
@@ -73,8 +92,11 @@ class VoterInquiryBot:
         
         if not creds_file:
             raise FileNotFoundError(
-                "لم يتم العثور على ملف credentials.json\n"
-                "يرجى وضع ملف الـ Service Account في المجلد الحالي باسم credentials.json"
+                "لم يتم العثور على طريقة للاتصال بـ Google Sheets\n"
+                "الرجاء:\n"
+                "1. إعداد Google Sheets integration في Replit (مفضل)\n"
+                "   أو\n"
+                "2. وضع ملف credentials.json من Google Cloud Console"
             )
         
         # تعريف الصلاحيات المطلوبة
@@ -89,7 +111,7 @@ class VoterInquiryBot:
         
         # فتح الملف
         self.spreadsheet = self.gc.open_by_key(SPREADSHEET_ID)
-        print("✓ تم الاتصال بنجاح")
+        print("✓ تم الاتصال بنجاح عبر credentials.json")
     
     def setup_selenium(self):
         """إعداد Selenium WebDriver"""
