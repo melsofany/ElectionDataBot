@@ -28,6 +28,12 @@ try:
 except ImportError:
     USE_REPLIT_CONNECTOR = False
 
+# استيراد Flask app من dashboard للتشغيل مع gunicorn
+try:
+    from dashboard import app
+except ImportError:
+    app = None
+
 # إعدادات الملفات
 PROGRESS_FILE = "progress.json"
 SPREADSHEET_ID = "1-rCGPx6vyEMm3zmR7ks3xZh63XcJk4ks78e5e9jfuyo"
