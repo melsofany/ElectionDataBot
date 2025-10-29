@@ -71,11 +71,12 @@ git push github main
 
 ### 2.3 إعداد متغيرات البيئة (Environment Variables)
 
-اضغط على **"Environment"** ← **"Add Environment Variable"** وأضف:
+اضغط على **"Environment"** ← **"Add Environment Variable"** وأضف المتغيرات التالية:
 
 | المفتاح (Key) | القيمة (Value) | الوصف |
 |--------------|---------------|-------|
 | `SPREADSHEET_ID` | `1-rCGPx6vyE...` | معرّف Google Sheet الخاص بك |
+| `GOOGLE_APPLICATION_CREDENTIALS_JSON` | `{محتوى ملف JSON}` | **مهم!** محتوى ملف Service Account كامل |
 | `PYTHONUNBUFFERED` | `1` | لعرض السجلات مباشرة |
 | `PORT` | `10000` | المنفذ الذي يستخدمه Render |
 
@@ -84,40 +85,37 @@ git push github main
 - انسخ الرابط: `https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit`
 - الـ `SPREADSHEET_ID` هو الجزء بين `/d/` و `/edit`
 
-### 2.4 إعداد Google Service Account
+**📌 الحصول على GOOGLE_APPLICATION_CREDENTIALS_JSON**:
+1. افتح ملف `credentials.json` أو `service_account.json` بمحرر نصوص
+2. انسخ **المحتوى الكامل** للملف (من `{` إلى `}`)
+3. الصق المحتوى في قيمة المتغير في Render
 
-#### الطريقة الأولى: استخدام متغيرات البيئة (موصى بها)
-
-1. افتح [Google Cloud Console](https://console.cloud.google.com)
-2. أنشئ Service Account وحمّل ملف JSON
-3. افتح الملف وانسخ **المحتوى بالكامل**
-4. في Render، أضف متغير بيئة:
-   - **Key**: `GOOGLE_APPLICATION_CREDENTIALS_JSON`
-   - **Value**: الصق محتوى ملف JSON كاملاً
-
-5. **عدّل الكود** ليقرأ من متغير البيئة بدلاً من ملف:
-
-في `main.py`، أضف في بداية دالة `connect_to_sheets()`:
-
-```python
-# محاولة قراءة credentials من متغير البيئة أولاً
-creds_json = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS_JSON')
-if creds_json:
-    import json
-    from google.oauth2.service_account import Credentials
-    
-    creds_dict = json.loads(creds_json)
-    credentials = Credentials.from_service_account_info(creds_dict, scopes=scope)
-    self.gc = gspread.authorize(credentials)
-    self.spreadsheet = self.gc.open_by_key(SPREADSHEET_ID)
-    print("✓ تم الاتصال بنجاح عبر متغير البيئة")
-    return
+**مثال على المحتوى**:
+```json
+{
+  "type": "service_account",
+  "project_id": "your-project",
+  "private_key_id": "...",
+  "private_key": "-----BEGIN PRIVATE KEY-----\n...",
+  "client_email": "your-bot@your-project.iam.gserviceaccount.com",
+  ...
+}
 ```
 
-#### الطريقة الثانية: رفع ملف credentials (أقل أماناً)
+### 2.4 إعداد Google Service Account
 
-1. ارفع ملف `service_account.json` إلى GitHub (غير موصى به للمستودعات العامة)
-2. تأكد من إضافة `.gitignore` لحماية الملف
+**⚠️ خطوة مهمة جداً**: يجب مشاركة Google Sheet مع Service Account!
+
+1. افتح ملف `credentials.json` (الذي وضعت محتواه في `GOOGLE_APPLICATION_CREDENTIALS_JSON`)
+2. ابحث عن قيمة `"client_email"` في الملف
+   - مثال: `"your-bot@your-project.iam.gserviceaccount.com"`
+3. افتح Google Sheet الخاص بك
+4. اضغط على زر **"Share"** (مشاركة) في الأعلى
+5. أضف البريد الإلكتروني `client_email`
+6. امنحه صلاحية **"Editor"** (محرر)
+7. اضغط **"Send"** أو **"Done"**
+
+✅ **الكود جاهز ولا يحتاج تعديل!** البرنامج يقرأ من المتغير البيئي تلقائياً
 
 ---
 

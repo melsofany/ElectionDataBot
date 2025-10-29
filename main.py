@@ -71,7 +71,27 @@ class VoterInquiryBot:
         """الاتصال بـ Google Sheets"""
         print("جاري الاتصال بـ Google Sheets...")
         
-        # محاولة استخدام Replit Connector أولاً
+        # تعريف الصلاحيات المطلوبة
+        scope = [
+            'https://spreadsheets.google.com/feeds',
+            'https://www.googleapis.com/auth/drive'
+        ]
+        
+        # الطريقة 1: قراءة من متغير بيئي يحتوي على محتوى JSON
+        creds_json_str = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS_JSON') or os.environ.get('GOOGLE_CREDENTIALS_JSON')
+        if creds_json_str:
+            try:
+                print("  استخدام Google Credentials من متغير البيئة...")
+                creds_dict = json.loads(creds_json_str)
+                credentials = Credentials.from_service_account_info(creds_dict, scopes=scope)
+                self.gc = gspread.authorize(credentials)
+                self.spreadsheet = self.gc.open_by_key(SPREADSHEET_ID)
+                print("✓ تم الاتصال بنجاح عبر متغير البيئة")
+                return
+            except Exception as e:
+                print(f"  تحذير: فشل الاتصال عبر متغير البيئة: {str(e)}")
+        
+        # الطريقة 2: محاولة استخدام Replit Connector
         if USE_REPLIT_CONNECTOR:
             try:
                 print("  استخدام Replit Google Sheets Connector...")
@@ -81,9 +101,9 @@ class VoterInquiryBot:
                 return
             except Exception as e:
                 print(f"  تحذير: فشل الاتصال عبر Replit Connector: {str(e)}")
-                print("  محاولة استخدام ملف credentials.json...")
         
-        # الطريقة التقليدية: البحث عن ملف credentials
+        # الطريقة 3: البحث عن ملف credentials
+        print("  محاولة البحث عن ملف credentials.json...")
         creds_paths = [
             "credentials.json",
             "service_account.json",
@@ -96,28 +116,26 @@ class VoterInquiryBot:
                 creds_file = path
                 break
         
-        if not creds_file:
-            raise FileNotFoundError(
-                "لم يتم العثور على طريقة للاتصال بـ Google Sheets\n"
-                "الرجاء:\n"
-                "1. إعداد Google Sheets integration في Replit (مفضل)\n"
-                "   أو\n"
-                "2. وضع ملف credentials.json من Google Cloud Console"
-            )
+        if creds_file:
+            try:
+                credentials = Credentials.from_service_account_file(creds_file, scopes=scope)
+                self.gc = gspread.authorize(credentials)
+                self.spreadsheet = self.gc.open_by_key(SPREADSHEET_ID)
+                print("✓ تم الاتصال بنجاح عبر credentials.json")
+                return
+            except Exception as e:
+                print(f"  تحذير: فشل الاتصال عبر ملف credentials: {str(e)}")
         
-        # تعريف الصلاحيات المطلوبة
-        scope = [
-            'https://spreadsheets.google.com/feeds',
-            'https://www.googleapis.com/auth/drive'
-        ]
-        
-        # المصادقة
-        credentials = Credentials.from_service_account_file(creds_file, scopes=scope)
-        self.gc = gspread.authorize(credentials)
-        
-        # فتح الملف
-        self.spreadsheet = self.gc.open_by_key(SPREADSHEET_ID)
-        print("✓ تم الاتصال بنجاح عبر credentials.json")
+        # فشلت جميع المحاولات
+        raise FileNotFoundError(
+            "لم يتم العثور على طريقة للاتصال بـ Google Sheets\n"
+            "الرجاء:\n"
+            "1. إضافة متغير بيئي GOOGLE_APPLICATION_CREDENTIALS_JSON يحتوي على محتوى ملف JSON (موصى به لـ Render)\n"
+            "   أو\n"
+            "2. إعداد Google Sheets integration في Replit (للعمل على Replit)\n"
+            "   أو\n"
+            "3. وضع ملف credentials.json في المجلد الرئيسي"
+        )
     
     def setup_selenium(self):
         """إعداد Selenium WebDriver"""
