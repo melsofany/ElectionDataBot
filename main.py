@@ -340,6 +340,22 @@ class VoterInquiryBot:
             soup = BeautifulSoup(self.driver.page_source, 'html.parser')
             page_text = soup.get_text()
             
+            # التحقق من حالة "ليس له حق الانتخاب"
+            no_voting_right_keywords = [
+                'ليس له حق الانتخاب',
+                'ليس له حق انتخاب',
+                'غير مدرج بقاعدة بيانات الناخبين',
+                'غير مدرج بقاعده بيانات الناخبين',
+                'ليس لديه حق الانتخاب',
+                'لا يحق له الانتخاب'
+            ]
+            
+            if any(keyword in page_text for keyword in no_voting_right_keywords):
+                result['status'] = 'no_voting_right'
+                result['error_message'] = 'ليس له حق الانتخاب'
+                print(f"  ⚠️ الرقم القومي ليس له حق الانتخاب")
+                return result
+            
             # التحقق من وجود رسائل خطأ
             error_keywords = ['غير موجود', 'خطأ', 'غير صحيح', 'لا يوجد', 'invalid', 'error', 'not found']
             if any(keyword in page_text.lower() for keyword in error_keywords):
@@ -826,16 +842,29 @@ class VoterInquiryBot:
     def write_result(self, worksheet, row_number, name, national_id, result):
         """كتابة نتيجة واحدة في الشيت"""
         try:
-            data = [
-                name,
-                national_id,
-                result.get('مركز_الانتخاب', ''),
-                result.get('العنوان', ''),
-                result.get('رقم_اللجنة_الفرعية', ''),
-                result.get('الرقم_في_الكشوف', ''),
-                result.get('status', ''),
-                result.get('error_message', '')
-            ]
+            # إذا كان الشخص ليس له حق الانتخاب، نكتب فقط الاسم والرقم القومي والملاحظة
+            if result.get('status') == 'no_voting_right':
+                data = [
+                    name,
+                    national_id,
+                    '',  # مركز الانتخاب - فارغ
+                    '',  # العنوان - فارغ
+                    '',  # رقم اللجنة الفرعية - فارغ
+                    '',  # الرقم في الكشوف - فارغ
+                    '',  # الحالة - فارغ
+                    'ليس له حق الانتخاب'  # ملاحظات
+                ]
+            else:
+                data = [
+                    name,
+                    national_id,
+                    result.get('مركز_الانتخاب', ''),
+                    result.get('العنوان', ''),
+                    result.get('رقم_اللجنة_الفرعية', ''),
+                    result.get('الرقم_في_الكشوف', ''),
+                    result.get('status', ''),
+                    result.get('error_message', '')
+                ]
             
             # الكتابة في الصف المناسب (نضيف 1 للعناوين)
             cell_range = f'A{row_number}:H{row_number}'
@@ -899,6 +928,8 @@ class VoterInquiryBot:
                 
                 if result['status'] == 'success':
                     print(f"  ✓ تم بنجاح - المركز: {result.get('مركز_الانتخاب', 'غير متوفر')}")
+                elif result['status'] == 'no_voting_right':
+                    print(f"  ⚠️ ليس له حق الانتخاب - تم تسجيل الملاحظة")
                 else:
                     print(f"  ✗ خطأ: {result.get('error_message', 'غير معروف')}")
                 
