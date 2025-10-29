@@ -153,6 +153,20 @@ def reset_progress():
             'message': f'خطأ في إعادة التعيين: {str(e)}'
         })
 
+@app.route('/health')
+def health():
+    """Health check endpoint لمنع النوم على Render"""
+    progress = get_progress()
+    global bot_process
+    is_running = bot_process is not None and bot_process.poll() is None
+    
+    return jsonify({
+        'status': 'healthy',
+        'bot_running': is_running,
+        'total_processed': progress.get('total_processed', 0),
+        'timestamp': datetime.now().isoformat()
+    })
+
 if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))

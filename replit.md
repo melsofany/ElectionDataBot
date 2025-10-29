@@ -5,6 +5,17 @@ This is an automated tool that extracts voter information from the Egyptian High
 
 **Status**: ✅ Fully configured and ready to use in Replit environment
 **Dashboard**: Running on port 5000 with real-time monitoring
+**Deployment**: Ready for Render.com with 24/7 uptime support
+
+## ✅ Render Deployment Setup (2025-10-28)
+The project is now ready for deployment on Render.com:
+- ✅ Dockerfile created with Chrome/ChromeDriver installation
+- ✅ requirements.txt generated with all dependencies + gunicorn
+- ✅ render.yaml configuration file created
+- ✅ Health check endpoint (/health) added to prevent sleep
+- ✅ Comprehensive deployment guide created (دليل_النشر_على_Render.md)
+- ✅ Docker environment configured for production
+- ✅ Supports continuous 24/7 operation with UptimeRobot integration
 
 ## ✅ Replit Environment Setup (2025-10-28)
 The project has been successfully configured to run in Replit:
@@ -17,14 +28,39 @@ The project has been successfully configured to run in Replit:
 
 ## Project Structure
 ```
-├── main.py                 # Main application file
-├── credentials.json        # Google Service Account credentials (required)
-├── progress.json          # Progress tracking file (auto-generated)
-├── README.md              # User documentation (Arabic)
-└── replit.md              # Project documentation
+├── main.py                          # Main application file with Selenium bot
+├── dashboard.py                     # Flask dashboard for monitoring
+├── google_sheets_connector.py       # Replit Google Sheets integration
+├── templates/
+│   └── dashboard.html               # Dashboard UI (Arabic)
+├── Dockerfile                       # Docker configuration for Render deployment
+├── render.yaml                      # Render deployment configuration
+├── requirements.txt                 # Python dependencies for Docker
+├── pyproject.toml                   # Python project metadata (Replit)
+├── credentials.json                 # Google Service Account credentials (if not using Replit connector)
+├── progress.json                    # Progress tracking file (auto-generated)
+├── bot_output.log                   # Real-time bot logs (auto-generated)
+├── README.md                        # User documentation (Arabic)
+├── دليل_الاستخدام.md                # Usage guide (Arabic)
+├── دليل_النشر_على_Render.md         # Render deployment guide (Arabic)
+└── replit.md                        # Project documentation
 ```
 
 ## Recent Changes
+
+- 2025-10-28: **🚀 Render Deployment Support** ✅
+  - **الملفات الجديدة**:
+    * `Dockerfile`: بناء صورة Docker مع Chrome + ChromeDriver
+    * `render.yaml`: تكوين النشر على Render
+    * `requirements.txt`: تبعيات Python لـ Docker
+    * `دليل_النشر_على_Render.md`: دليل شامل بالعربية للنشر
+  - **التحسينات**:
+    * إضافة endpoint `/health` لمنع النوم بعد 15 دقيقة
+    * دعم متغير البيئة `PORT` (10000 لـ Render)
+    * إعداد gunicorn كـ production server
+    * دعم 24/7 uptime عبر UptimeRobot
+    * تعليمات كاملة لنشر على Render مع Google Sheets integration
+  - **النتيجة**: التطبيق جاهز للنشر على Render بضغطة زر مع عمل مستمر بدون توقف
 
 - 2025-10-28: **تحسينات شاملة لاستخراج مركز الانتخاب** ✅
   - **المشكلة المُحلّة**: كان مركز الانتخاب (العمود C) يظهر فارغاً
