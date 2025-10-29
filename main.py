@@ -825,20 +825,25 @@ class VoterInquiryBot:
     
     def write_result(self, worksheet, row_number, name, national_id, result):
         """كتابة نتيجة واحدة في الشيت"""
-        data = [
-            name,
-            national_id,
-            result.get('مركز_الانتخاب', ''),
-            result.get('العنوان', ''),
-            result.get('رقم_اللجنة_الفرعية', ''),
-            result.get('الرقم_في_الكشوف', ''),
-            result.get('status', ''),
-            result.get('error_message', '')
-        ]
-        
-        # الكتابة في الصف المناسب (نضيف 1 للعناوين)
-        cell_range = f'A{row_number}:H{row_number}'
-        worksheet.update(values=[data], range_name=cell_range)
+        try:
+            data = [
+                name,
+                national_id,
+                result.get('مركز_الانتخاب', ''),
+                result.get('العنوان', ''),
+                result.get('رقم_اللجنة_الفرعية', ''),
+                result.get('الرقم_في_الكشوف', ''),
+                result.get('status', ''),
+                result.get('error_message', '')
+            ]
+            
+            # الكتابة في الصف المناسب (نضيف 1 للعناوين)
+            cell_range = f'A{row_number}:H{row_number}'
+            worksheet.update(values=[data], range_name=cell_range)
+            print(f"  ✓ تم كتابة النتيجة في Google Sheet (صف {row_number})")
+        except Exception as e:
+            print(f"  ✗ خطأ في كتابة النتيجة إلى Google Sheet: {str(e)}")
+            raise
     
     def run(self):
         """تشغيل البوت الرئيسي"""
