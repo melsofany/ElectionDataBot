@@ -5,7 +5,7 @@ integrations = ["google-sheet:1.0.0"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["chromedriver", "chromium", "geckodriver", "glibcLocales"]
+packages = ["chromedriver", "chromium", "geckodriver", "glibcLocales", "openssl", "postgresql"]
 
 [workflows]
 runButton = "Project"
@@ -23,26 +23,22 @@ args = "Dashboard"
 name = "Dashboard"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python dashboard.py"
-waitForPort = 5000
-
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app"
+waitForPort = 5000
 
 [[ports]]
 localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 36913
-externalPort = 3000
-
-[[ports]]
 localPort = 38811
 externalPort = 3001
 
 [deployment]
-deploymentTarget = "vm"
-run = ["python", "dashboard.py"]
+deploymentTarget = "autoscale"
+run = ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]

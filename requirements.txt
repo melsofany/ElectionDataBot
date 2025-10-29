@@ -10,3 +10,8 @@ selenium>=4.38.0
 trafilatura>=2.0.0
 webdriver-manager>=4.0.2
 gunicorn>=21.2.0
+email_validator
+flask
+flask-sqlalchemy
+gunicorn
+psycopg2-binary
